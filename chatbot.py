@@ -23,7 +23,7 @@ class ChatBot:
         self.name = 'MarioBot'
         self.selected_theme = None
         self.presentation = 'Hi, my name is MarioBot, I am a chatbot. I am here to help you with any questions you may have regarding: '
-
+        self.current_embedding = None
         self.nlp = None
         self.w2v = None 
 
@@ -55,11 +55,11 @@ class ChatBot:
 
             query = input("\nUser: ")
             if query == '':
-                print(f"\n{self.name}: User did not provide text. Aborting")
+                #print(f"\n{self.name}: User did not provide text. Aborting")
                 break
-            if any(keyword in query.lower() for keyword in ['bye', 'goodbye', 'see you later']):
-                print(f"\n{self.name}: Bye Bye")
-                break
+            # if any(keyword in query.lower() for keyword in ['bye', 'goodbye', 'see you later']):
+            #     print(f"\n{self.name}: Bye Bye")
+            #     break
             #print(f"\nUser: {query}")
 
             if self.selected_theme is None:
@@ -114,14 +114,18 @@ class ChatBot:
     def find_best_answer(self, query, topic):
         
         embed_query = embed_sentence(query).reshape(1, -1)
-
+        if self.current_embedding is None:
+            self.current_embedding = embed_query
+            
+            
+        self.current_embedding += embed_query
         df = pd.read_csv(f"word2vec_data/{topic}.csv")
         df_embeddings = np.load(f"word2vec_data/{topic}_embeddings.npy")
 
         most_similar_responce = calculate_similarity_indices(embed_query , df_embeddings)
 
         predicted_sentence = df.iloc[most_similar_responce[0]]['answer']
-
+        self.current_embedding = embed_sentence(predicted_sentence).reshape(1, -1) + embed_query + 0.3 * self.current_embedding
         return predicted_sentence
         
 chatbot = ChatBot()
