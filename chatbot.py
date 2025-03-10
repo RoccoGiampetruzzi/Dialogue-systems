@@ -59,13 +59,15 @@ class ChatBot:
             if query == '':
                 #print(f"\n{self.name}: User did not provide text. Aborting")
                 break
-            # if any(keyword in query.lower() for keyword in ['bye', 'goodbye', 'see you later']):
-            #     print(f"\n{self.name}: Bye Bye")
-            #     break
-            #print(f"\nUser: {query}")
 
-            # if self.selected_theme is None:
-            #     matching_words =  self.find_matching_words(query)
+            print(f"\nUser: {query}")
+
+            if any(keyword in query.lower() for keyword in ['bye', 'goodbye', 'see you later']):
+                print(f"\n{self.name}: Bye Bye")
+                break
+
+            if self.selected_theme is None:
+                matching_words =  self.find_matching_words(query)
 
 
             #     if len(matching_words) > 1:
@@ -77,9 +79,11 @@ class ChatBot:
             #         continue
             
             #     self.selected_theme = matching_words[0]
+
             if self.selected_theme is None:
                 self.selected_theme = self.themes[np.argmax(cosine_similarity(embed_sentence(query).reshape(1, -1), self.theme_embeddings))]
-                print(f'\nConversation Theme: {self.selected_theme}\n')
+                #print(f'\nConversation Theme: {self.selected_theme}\n')
+
             answer = self.find_best_answer(query, self.selected_theme)
             print(f"\n{self.name}: {answer}")
 
@@ -130,5 +134,3 @@ class ChatBot:
         self.current_embedding = 0.7 * (embed_sentence(predicted_sentence).reshape(1, -1)*0.5 + embed_query*0.5) + 0.3 * self.current_embedding
         return predicted_sentence
         
-chatbot = ChatBot()
-chatbot.get_dialogue()
