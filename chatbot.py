@@ -13,6 +13,7 @@ from utils import *
 import json
 import gensim.downloader as api
 
+
 class ChatBot:
 
     def __init__(self):
@@ -20,16 +21,20 @@ class ChatBot:
         self.dataframes = {}
         self.themes = None
         self.name = 'MarioBot'
-
+        self.selected_theme = None
         self.presentation = 'Hi, my name is MarioBot, I am a chatbot. I am here to help you with any questions you may have regarding: '
 
         self.nlp = None
-        self.w2v = None
+        self.w2v = None 
 
+        self.load_models()
+        
     def load_models(self):
-
+        
+        print('Building Spacy')
         self.nlp = spacy.load("en_core_web_sm")
 
+        print('Building Word2Vec')
         pretrained_model_path = api.load('word2vec-google-news-300', return_path=True)
         self.w2v = KeyedVectors.load_word2vec_format(pretrained_model_path, binary=True)
 
@@ -44,30 +49,33 @@ class ChatBot:
     
     def get_dialogue(self):
 
-        self.load_models()
-
         print(f"{self.name}: {self.presentation + ', '.join(self.themes)}.\nPlease ask me a question:")
         
         while True:
 
-            query = input("Insert the question: ")
+            query = input("\nUser: ")
+            if query == '':
+                print(f"\n{self.name}: User did not provide text. Aborting")
+                break
+            if any(keyword in query.lower() for keyword in ['bye', 'goodbye', 'see you later']):
+                print(f"\n{self.name}: Bye Bye")
+                break
+            #print(f"\nUser: {query}")
 
-            print(f"\nUser: {query}")
+            if self.selected_theme is None:
+                matching_words =  self.find_matching_words(query)
 
-            matching_words =  self.find_matching_words(query)
 
-            topic = matching_words[0]
+                if len(matching_words) > 1:
+                    print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
 
-            if len(matching_words) > 1:
-                
-                print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
+                elif len(matching_words) == 0:
 
-            elif len(matching_words) == 0:
-
-                print(f"\n{self.name}: I am sorry, I do not have information about that topic. Try to rephrase the question or ask me something else.")
-
+                    print(f"\n{self.name}: I am sorry, I do not have information about that topic. Try to rephrase the question or ask me something else.")
+                    continue
             
-            answer = self.find_best_answer(query, topic)
+                self.selected_theme = matching_words[0]
+            answer = self.find_best_answer(query, self.selected_theme)
             print(f"\n{self.name}: {answer}")
 
         
@@ -105,12 +113,16 @@ class ChatBot:
     
     def find_best_answer(self, query, topic):
         
-        embed_query = embed_sentence(query)
-        df = self.dataframes[topic]['question_embeddings'].to_numpy()
+        embed_query = embed_sentence(query).reshape(1, -1)
 
-        most_similar_responce = calculate_similarity_indices(np.array(embed_query).reshape(1, -1) , np.array(df))
+        df = pd.read_csv(f"word2vec_data/{topic}.csv")
+        df_embeddings = np.load(f"word2vec_data/{topic}_embeddings.npy")
+
+        most_similar_responce = calculate_similarity_indices(embed_query , df_embeddings)
 
         predicted_sentence = df.iloc[most_similar_responce[0]]['answer']
 
         return predicted_sentence
         
+chatbot = ChatBot()
+chatbot.get_dialogue()
