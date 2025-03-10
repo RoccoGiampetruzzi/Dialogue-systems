@@ -91,7 +91,9 @@ class ChatBot:
     def tokenize_sentence(self, sentence):
         
         doc = self.nlp(sentence)
-        tokens = [token.text.lower() for token in doc if not token.is_punct]
+        tokens = [token.text.lower() 
+                  for token in doc 
+                  if not token.is_punct and not token.is_stop and token.is_alpha and token.pos_ in ["NOUN", 'VERB']]
         return tokens
 
 
