@@ -22,7 +22,8 @@ class ChatBot:
         self.themes = None
         self.name = 'MarioBot'
         self.selected_theme = None
-        self.presentation = 'Hi, my name is MarioBot, I am a chatbot. I am here to help you with any questions you may have regarding: '
+        self.theme_embeddings = []
+        self.presentation = f'Hi, my name is {self.name}, I am a chatbot. I am here to help you with any questions you may have regarding: '
         self.current_embedding = None
         self.nlp = None
         self.w2v = None 
@@ -45,6 +46,7 @@ class ChatBot:
 
             temp_df = pd.read_csv(f"word2vec_data/{theme}.csv")
             self.dataframes[theme] = temp_df
+            self.theme_embeddings.append(self.w2v[theme])
 
     
     def get_dialogue(self):
@@ -62,19 +64,22 @@ class ChatBot:
             #     break
             #print(f"\nUser: {query}")
 
-            if self.selected_theme is None:
-                matching_words =  self.find_matching_words(query)
+            # if self.selected_theme is None:
+            #     matching_words =  self.find_matching_words(query)
 
 
-                if len(matching_words) > 1:
-                    print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
+            #     if len(matching_words) > 1:
+            #         print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
 
-                elif len(matching_words) == 0:
+            #     elif len(matching_words) == 0:
 
-                    print(f"\n{self.name}: I am sorry, I do not have information about that topic. Try to rephrase the question or ask me something else.")
-                    continue
+            #         print(f"\n{self.name}: I am sorry, I do not have information about that topic. Try to rephrase the question or ask me something else.")
+            #         continue
             
-                self.selected_theme = matching_words[0]
+            #     self.selected_theme = matching_words[0]
+            if self.selected_theme is None:
+                self.selected_theme = self.themes[np.argmax(cosine_similarity(embed_sentence(query).reshape(1, -1), self.theme_embeddings))]
+                print(f'\nConversation Theme: {self.selected_theme}\n')
             answer = self.find_best_answer(query, self.selected_theme)
             print(f"\n{self.name}: {answer}")
 
@@ -116,16 +121,13 @@ class ChatBot:
         embed_query = embed_sentence(query).reshape(1, -1)
         if self.current_embedding is None:
             self.current_embedding = embed_query
-            
-            
-        self.current_embedding += embed_query
-        df = pd.read_csv(f"word2vec_data/{topic}.csv")
+                
         df_embeddings = np.load(f"word2vec_data/{topic}_embeddings.npy")
 
-        most_similar_responce = calculate_similarity_indices(embed_query , df_embeddings)
+        most_similar_responce = calculate_similarity_indices((0.3*self.current_embedding + 0.7*embed_query), df_embeddings)
 
-        predicted_sentence = df.iloc[most_similar_responce[0]]['answer']
-        self.current_embedding = embed_sentence(predicted_sentence).reshape(1, -1) + embed_query + 0.3 * self.current_embedding
+        predicted_sentence = self.dataframes[self.selected_theme].iloc[most_similar_responce[0]]['answer']
+        self.current_embedding = 0.7 * (embed_sentence(predicted_sentence).reshape(1, -1)*0.5 + embed_query*0.5) + 0.3 * self.current_embedding
         return predicted_sentence
         
 chatbot = ChatBot()

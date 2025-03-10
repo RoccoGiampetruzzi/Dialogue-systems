@@ -18,7 +18,6 @@ pretrained_model = KeyedVectors.load_word2vec_format(pretrained_model_path, bina
 def calculate_similarity_indices(vector1, vector2):
     # Calculate the cosine similarity between each row in vector1 and vector2
     similarities = cosine_similarity(vector1, vector2)
-    print(similarities)
     # For each row in vector1, find the index of the most similar row in vector2 
     most_similar_indices = np.argmax(similarities, axis=1)
     
