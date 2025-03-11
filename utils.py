@@ -1,13 +1,9 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity 
-from gensim.models import Word2Vec
-from nltk.tokenize import word_tokenize
 import numpy as np
 import spacy
 import gensim.downloader as api
-from gensim.models import Word2Vec
-from gensim.utils import simple_preprocess
 from gensim.models import KeyedVectors
 
 nlp = spacy.load("en_core_web_sm")
@@ -24,16 +20,16 @@ def calculate_similarity_indices(vector1, vector2):
     return most_similar_indices
 
 
-def tokenize_sentence(sentence):
+def tokenize_sentence_util(sentence):
     
     doc = nlp(sentence)
     tokens = [token.text.lower() for token in doc if not token.is_punct]
     return tokens
 
 
-def embed_sentence(sentence):
+def embed_sentence_util(sentence):
     # Split the sentence into tokens
-    tokens = tokenize_sentence(sentence)
+    tokens = tokenize_sentence_util(sentence)
     
     # Initialize an empty array to store the word embeddings
     embeddings = np.zeros(pretrained_model.vector_size)

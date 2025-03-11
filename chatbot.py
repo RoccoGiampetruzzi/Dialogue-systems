@@ -58,7 +58,6 @@ class ChatBot:
             query = input("\nUser: ")
 
             if query == '':
-                #print(f"\n{self.name}: User did not provide text. Aborting")
                 break
 
             print(f"\nUser: {query}")
@@ -74,13 +73,6 @@ class ChatBot:
 
                 if len(matching_words) > 1:
                     print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
-
-            #     elif len(matching_words) == 0:
-
-            #         print(f"\n{self.name}: I am sorry, I do not have information about that topic. Try to rephrase the question or ask me something else.")
-            #         continue
-            
-            #     self.selected_theme = matching_words[0]
 
             if self.selected_theme is None:
                 self.selected_theme = self.themes[np.argmax(cosine_similarity(self.embed_sentence(query).reshape(1, -1), self.theme_embeddings))]
@@ -139,6 +131,7 @@ class ChatBot:
 
         # Select the best answer
         predicted_sentence = self.dataframes[self.selected_theme].loc[most_similar_responce[0], 'answer']
+
         # Drop the row from the dataframe associated to the selected anser, such that it cannot be repeated again in the future
         self.dataframes[self.selected_theme] = self.dataframes[self.selected_theme].drop(index=most_similar_responce[0])
 
@@ -146,7 +139,3 @@ class ChatBot:
         
         return predicted_sentence
         
-
-
-# c  = ChatBot()
-# c.get_dialogue()
