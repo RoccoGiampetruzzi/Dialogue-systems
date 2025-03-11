@@ -56,6 +56,7 @@ class ChatBot:
         while True:
 
             query = input("\nUser: ")
+
             if query == '':
                 #print(f"\n{self.name}: User did not provide text. Aborting")
                 break
@@ -68,10 +69,11 @@ class ChatBot:
 
             if self.selected_theme is None:
                 matching_words =  self.find_matching_words(query)
+                #print(matching_words)
+                self.selected_theme = matching_words[0] if len(matching_words) > 0 else None
 
-
-            #     if len(matching_words) > 1:
-            #         print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
+                if len(matching_words) > 1:
+                    print(f'\n{self.name}: Looks like you are asking about multiple topics. We will solve one topic at time to avoid confusion. We start with the first topic: {matching_words[0]}.')
 
             #     elif len(matching_words) == 0:
 
@@ -81,9 +83,9 @@ class ChatBot:
             #     self.selected_theme = matching_words[0]
 
             if self.selected_theme is None:
-                self.selected_theme = self.themes[np.argmax(cosine_similarity(embed_sentence(query).reshape(1, -1), self.theme_embeddings))]
-                #print(f'\nConversation Theme: {self.selected_theme}\n')
+                self.selected_theme = self.themes[np.argmax(cosine_similarity(self.embed_sentence(query).reshape(1, -1), self.theme_embeddings))]
 
+             
             answer = self.find_best_answer(query, self.selected_theme)
             print(f"\n{self.name}: {answer}")
 
@@ -99,7 +101,7 @@ class ChatBot:
 
     def embed_sentence(self, sentence):
         # Split the sentence into tokens
-        tokens = tokenize_sentence(sentence)
+        tokens = self.tokenize_sentence(sentence)
         
         # Initialize an empty array to store the word embeddings
         embeddings = np.zeros(self.w2v.vector_size)
@@ -122,9 +124,12 @@ class ChatBot:
     def find_matching_words(self, query):
         return [word for word in self.themes if word in query]
     
+
+    
     def find_best_answer(self, query, topic):
         
-        embed_query = embed_sentence(query).reshape(1, -1)
+        embed_query = self.embed_sentence(query).reshape(1, -1)
+
         if self.current_embedding is None:
             self.current_embedding = embed_query
                 
@@ -132,7 +137,16 @@ class ChatBot:
 
         most_similar_responce = calculate_similarity_indices((0.3*self.current_embedding + 0.7*embed_query), df_embeddings)
 
-        predicted_sentence = self.dataframes[self.selected_theme].iloc[most_similar_responce[0]]['answer']
-        self.current_embedding = 0.7 * (embed_sentence(predicted_sentence).reshape(1, -1)*0.5 + embed_query*0.5) + 0.3 * self.current_embedding
+        # Select the best answer
+        predicted_sentence = self.dataframes[self.selected_theme].loc[most_similar_responce[0], 'answer']
+        # Drop the row from the dataframe associated to the selected anser, such that it cannot be repeated again in the future
+        self.dataframes[self.selected_theme] = self.dataframes[self.selected_theme].drop(index=most_similar_responce[0])
+
+        self.current_embedding = 0.7 * (self.embed_sentence(predicted_sentence).reshape(1, -1)*0.5 + embed_query*0.5) + 0.3 * self.current_embedding
+        
         return predicted_sentence
         
+
+
+# c  = ChatBot()
+# c.get_dialogue()
