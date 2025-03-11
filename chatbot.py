@@ -58,17 +58,20 @@ class ChatBot:
             query = input("\nUser: ")
 
             if query == '':
+                self.selected_theme = None
+                self.current_embedding = None
                 break
 
             print(f"\nUser: {query}")
 
             if any(keyword in query.lower() for keyword in ['bye', 'goodbye', 'see you later']):
                 print(f"\n{self.name}: Bye Bye")
+                self.selected_theme = None
+                self.current_embedding = None
                 break
 
             if self.selected_theme is None:
                 matching_words =  self.find_matching_words(query)
-                #print(matching_words)
                 self.selected_theme = matching_words[0] if len(matching_words) > 0 else None
 
                 if len(matching_words) > 1:
